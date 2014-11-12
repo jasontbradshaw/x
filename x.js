@@ -1,5 +1,16 @@
-(function (undefined) {
+(function () {
   "use strict";
+
+  // detect CORS support and get the relevant constructor for it
+  var CORSHttpRequest = (function () {
+    if ('withCredentials' in (new XMLHttpRequest())) {
+      return XMLHttpRequest;
+    } else if (typeof XDomainRequest !== 'undefined') {
+      return window.XDomainRequest;
+    } else {
+      return null;
+    }
+  }());
 
   var toArray = function (a) { return Array.prototype.slice.call(a); };
   var has = function (o, p) { return Object.prototype.hasOwnProperty.call(o, p); };
@@ -46,11 +57,36 @@
     return target;
   };
 
+  var x = {
+    // the current version of the library, for easy reference
+    version: '0.0.0',
+
+    // the global default values used for each request that's sent
+    defaults: {
+      // the HTTP method to use when making our request. one of: ['DELETE', 'GET',
+      // 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT'].
+      method: 'GET',
+
+      // the type of data to tell the server we want back.
+      // TODO: what types do we want to allow?
+      content_type: 'application/json',
+      accepts: 'application/json',
+
+      // the type of request to make. one of: ['xhr', 'cors', 'jsonp'].
+      type: 'xhr',
+
+      // the data to send with the request. if falsy, indicates that no data
+      // should be sent. if a string, will be sent as-is. if a plain object, will
+      // be serialized to a JSON string using the global JSON object.
+      data: null
+    }
+  };
+
   // TODO: full documentation once we know what we want to support!
   // the generic request function where the magic happens. `options` is a plain
   // object that tells us how to make the request, and `callback` is a function
   // that receives (`error`, `data`).
-  var x = function (options, callback) {
+  x.request = function (options, callback) {
     // make sure we got a function for our callback, so we can assume this later
     callback = typeof callback === 'function' ? callback : function () {};
 
@@ -69,29 +105,6 @@
 
     // TODO: now for the tricky part...
     callback.call(null, new Error('Not implemented!'));
-  };
-
-  // the current version of the library, for easy reference
-  x.version = '0.0.0';
-
-  // the global default values used for each request that's sent
-  x.defaults = {
-    // the HTTP method to use when making our request. one of: ['DELETE', 'GET',
-    // 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT'].
-    method: 'GET',
-
-    // the type of data to tell the server we want back.
-    // TODO: what types do we want to allow?
-    content_type: 'application/json',
-    accepts: 'application/json',
-
-    // the type of request to make. one of: ['xhr', 'cors', 'jsonp'].
-    type: 'xhr',
-
-    // the data to send with the request. if falsy, indicates that no data
-    // should be sent. if a string, will be sent as-is. if a plain object, will
-    // be serialized to a JSON string using the global JSON object.
-    data: null
   };
 
   // add shortcut methods for each HTTP method
@@ -119,7 +132,7 @@
         url: url
       });
 
-      return x(options, callback);
+      return x.request(options, callback);
     };
   });
 
